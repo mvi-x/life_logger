@@ -71,23 +71,27 @@ def append_to(file, entry): # Opens and appends an entry into a file
 	    pass
 
 def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
-	br = BackwardsReader(open(file))
-	out = []
-	if lines == 'all':
-		while 1:
-		    line = br.readline()
-		    if not line:
-		        break
-		    out.append(line)
-	else:
-		i = 0
-		while i < lines:
-			line = br.readline()
-			if not line:
-				break
-			out.append(line)
-			i = i+1
-	return out
+	try: 
+		br = BackwardsReader(open(file))
+		out = []
+		if lines == 'all':
+			while 1:
+			    line = br.readline()
+			    if not line:
+			        break
+			    out.append(line)
+		else:
+			i = 0
+			while i < lines:
+				line = br.readline()
+				if not line:
+					break
+				out.append(line)
+				i = i+1
+		return out
+	except IOError:
+		return "Error";
+
 
 
 def log_maker(user_input): # Processes user input and extracts a log or returns an error.
@@ -103,10 +107,13 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 
 	elif len(user_input) == 2: #life_logger.py  + "Text"
 		prev_entry = str(read_backwards('my_life.txt', 1))
-		start_finished = prev_entry.find('Finished: ')
-		end_finished = prev_entry.find(' |', start_finished)
-		prev_entry_finished = datetime.datetime.strptime(prev_entry[start_finished+10:end_finished], '%Y-%m-%d %H:%M')
-		log = LogEntry(user_input[1], prev_entry_finished)
+		if prev_entry == "Error":
+			log = LogEntry(user_input[1])
+		else:	
+			start_finished = prev_entry.find('Finished: ')
+			end_finished = prev_entry.find(' |', start_finished)
+			prev_entry_finished = datetime.datetime.strptime(prev_entry[start_finished+10:end_finished], '%Y-%m-%d %H:%M')
+			log = LogEntry(user_input[1], prev_entry_finished)
 
 	elif len(user_input) == 1:
 		error = 'At the very least you need to enter an action. Please use the following syntax: \'python life_logger.py "Text to log" start:-5h ;; start:is an optional parameter\''
