@@ -141,7 +141,7 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			assert maker_result[0] != None
 			log = maker_result[0]
 			elapsed = log.end - log.start
-			entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' |\n'
+			entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' |\n'
 			append_to('my_life.txt', entry)
 			print entry
 
