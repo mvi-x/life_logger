@@ -70,37 +70,44 @@ def append_to(file, entry): # Opens and appends an entry into a file
 	except IOError:
 	    pass
 
-def read_backwards(file, lines): # args[0]:since, args[1]:up-to
+def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
 	br = BackwardsReader(open(file))
+	out = []
 	if lines == 'all':
 		while 1:
 		    line = br.readline()
 		    if not line:
 		        break
-		    print repr(line)
+		    out.append(line)
 	else:
 		i = 0
 		while i < lines:
 			line = br.readline()
 			if not line:
 				break
-			print repr(line)
+			out.append(line)
 			i = i+1
+	return out
 
 
 def log_maker(user_input): # Processes user input and extracts a log or returns an error.
 	error = None
 	log = None
 
-	if len(user_input) == 3:
+	if len(user_input) == 3: #life_logger.py  + "Text" + start:
 		#user_input[2] is the optional argument where we set the start time
 		time_amount = float(user_input[2][7:-1]) #syntax is "start:-XXu", "start:-" is 7 chars long, so the amount starts at the 8th
 		#stime_unit = user_input[2][-1:] #units are set with only one character: s, h, d, y
 		start_time = timestamp - datetime.timedelta(hours = time_amount)
 		log = LogEntry(user_input[1],start_time)
 
-	elif len(user_input) == 2:
-		log = LogEntry(user_input[1])
+	elif len(user_input) == 2: #life_logger.py  + "Text"
+		prev_entry = str(read_backwards('my_life.txt', 1))
+		start_finished = prev_entry.find('Finished: ')
+		end_finished = prev_entry.find(' |', start_finished)
+		prev_entry_finished = datetime.datetime.strptime(prev_entry[start_finished+10:end_finished], '%Y-%m-%d %H:%M')
+		log = LogEntry(user_input[1], prev_entry_finished)
+
 	elif len(user_input) == 1:
 		error = 'At the very least you need to enter an action. Please use the following syntax: \'python life_logger.py "Text to log" start:-5h ;; start:is an optional parameter\''
 	else:
@@ -113,9 +120,11 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 		print '<Pending>'
 	elif user_input[1] == '--view-all':
 		read_backwards('my_life.txt', 'all')
+	# elif user_input[1] == '--view-today':
+	# 	read_backwards('my_life.txt', 'all', datetime.today())
 	elif user_input[1][:7] == '--last-':
 		lines = int(user_input[1][7:])
-		read_backwards('my_life.txt', lines)
+		print repr(read_backwards('my_life.txt', lines))
 
 	else:
 		maker_result = log_maker(sys.argv)
@@ -125,7 +134,7 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			assert maker_result[0] != None
 			log = maker_result[0]
 			elapsed = log.end - log.start
-			entry = '"' + log.action + '" | Started: ' + str(log.start) + ' | Finished: ' + str(log.end) + ' | Elapsed: ' + str(elapsed) + ' |\n'
+			entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' |\n'
 			append_to('my_life.txt', entry)
 			print entry
 
