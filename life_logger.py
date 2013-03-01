@@ -70,13 +70,22 @@ def append_to(file, entry): # Opens and appends an entry into a file
 	except IOError:
 	    pass
 
-def read_backwards(file): # args[0]:since, args[1]:up-to
+def read_backwards(file, lines): # args[0]:since, args[1]:up-to
 	br = BackwardsReader(open(file))
-	while 1:
-	    line = br.readline()
-	    if not line:
-	        break
-	    print repr(line)
+	if lines == 'all':
+		while 1:
+		    line = br.readline()
+		    if not line:
+		        break
+		    print repr(line)
+	else:
+		i = 0
+		while i < lines:
+			line = br.readline()
+			if not line:
+				break
+			print repr(line)
+			i = i+1
 
 
 def log_maker(user_input): # Processes user input and extracts a log or returns an error.
@@ -103,7 +112,10 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 		print '<Pending>'
 	elif user_input[1] == '--view-all':
-		read_backwards('my_life.txt')
+		read_backwards('my_life.txt', 'all')
+	elif user_input[1][:7] == '--last-':
+		lines = int(user_input[1][7:])
+		read_backwards('my_life.txt', lines)
 
 	else:
 		maker_result = log_maker(sys.argv)
@@ -119,7 +131,6 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 
 
 decision_maker(sys.argv)
-
 
 
 
