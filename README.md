@@ -1,4 +1,5 @@
 # Life-Logger Manifesto
+__This is a work in progress and is definitely not usable. If you want to look around and help out or tell me how I could improve the code, feel free.__
 
 Life-Logger is a terminal utility to track your day in one-liners, à la Twitter or version control commits.
 ## Its differentiating features are:

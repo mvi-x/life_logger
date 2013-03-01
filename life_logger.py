@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:utf-8 -*-
 # author: mvime -> mvime@mvi.me
 # License: Haven't figured that out yet.
 # file: life_logger.py
@@ -12,7 +13,7 @@ timestamp = datetime.datetime.now()
 #default start_time (to be used when first action ever // later on when end_time over one day since last end_time)
 default_start = timestamp - datetime.timedelta(hours = 1)
 
-# We define the LogEntry class, which needs an action, an end_time (ts) and a start_time (set by user or default_start)
+# We define the LogEntry class, which needs an action, an end_time (timestamp) and a start_time (set by user or default_start)
 class LogEntry:
 	def __init__(self, action, start_time = default_start, end_time = timestamp):
 		self.action = action
@@ -20,7 +21,19 @@ class LogEntry:
 		self.start = start_time
 
 
-def log_maker(user_input):
+def append_to(file, entry): # Opens and appends an entry into a file
+	try:
+	    logfile = open(file, "a") # Opens the file in appending mode or creates it if unexisting
+	    try:
+	        logfile.write(entry)
+	    finally:
+	        logfile.close()
+	except IOError:
+	    pass
+
+
+
+def log_maker(user_input): # Processes user input and extracts a log or returns an error.
 	error = None
 	log = None
 
@@ -41,8 +54,8 @@ def log_maker(user_input):
 
 
 
-def decision_maker(user_input):
-	if user_input[1][:1] == '--help': # if user inputs 'life_logger.py --help', print the help file
+def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
+	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 		print '<Pending>'
 	else:
 		maker_result = log_maker(sys.argv)
@@ -51,6 +64,9 @@ def decision_maker(user_input):
 		else:
 			assert maker_result[0] != None
 			log = maker_result[0]
+			elapsed = log.end - log.start
+			entry = '"' + log.action + '" | Started: ' + str(log.start) + ' | Finished: ' + str(log.end) + ' | Elapsed: ' + str(elapsed) + ' |\n'
+			append_to('my_life.txt', entry)
 			print log.action, log.end, log.start
 
 
