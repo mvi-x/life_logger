@@ -3,8 +3,9 @@
 # author: mvime -> mvime@mvi.me
 # License: Haven't figured that out yet.
 # file: life_logger.py
+# BackwardsReader implementation: Copyright (c) Peter Astrand <astrand@cendio.se>, PSF License
 
-import sys, datetime
+import sys, datetime, os, string
 #Syntax: python life_logger.py "Text to log" start:-5h ;; start:is an optional parameter
 
 # We set the timestamp
@@ -20,6 +21,44 @@ class LogEntry:
 		self.end = end_time
 		self.start = start_time
 
+class BackwardsReader: 
+    """Read a file line by line, backwards"""
+    BLKSIZE = 4096
+
+    def readline(self):
+        while 1:
+            newline_pos = string.rfind(self.buf, "\n")
+            pos = self.file.tell()
+            if newline_pos != -1:
+                # Found a newline
+                line = self.buf[newline_pos+1:]
+                self.buf = self.buf[:newline_pos]
+                if pos != 0 or newline_pos != 0 or self.trailing_newline:
+                    line += "\n"
+                return line
+            else:
+                if pos == 0:
+                    # Start-of-file
+                    return ""
+                else:
+                    # Need to fill buffer
+                    toread = min(self.BLKSIZE, pos)
+                    self.file.seek(-toread, 1)
+                    self.buf = self.file.read(toread) + self.buf
+                    self.file.seek(-toread, 1)
+                    if pos - toread == 0:
+                        self.buf = "\n" + self.buf
+
+    def __init__(self, file):
+        self.file = file
+        self.buf = ""
+        self.file.seek(-1, 2)
+        self.trailing_newline = 0
+        lastchar = self.file.read(1)
+        if lastchar == "\n":
+            self.trailing_newline = 1
+            self.file.seek(-1, 2)
+
 
 def append_to(file, entry): # Opens and appends an entry into a file
 	try:
@@ -31,6 +70,13 @@ def append_to(file, entry): # Opens and appends an entry into a file
 	except IOError:
 	    pass
 
+def read_backwards(file): # args[0]:since, args[1]:up-to
+	br = BackwardsReader(open(file))
+	while 1:
+	    line = br.readline()
+	    if not line:
+	        break
+	    print repr(line)
 
 
 def log_maker(user_input): # Processes user input and extracts a log or returns an error.
@@ -53,10 +99,12 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 	return log, error
 
 
-
 def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
 	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 		print '<Pending>'
+	elif user_input[1] == '--view-all':
+		read_backwards('my_life.txt')
+
 	else:
 		maker_result = log_maker(sys.argv)
 		if maker_result[1] != None:
@@ -67,9 +115,11 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			elapsed = log.end - log.start
 			entry = '"' + log.action + '" | Started: ' + str(log.start) + ' | Finished: ' + str(log.end) + ' | Elapsed: ' + str(elapsed) + ' |\n'
 			append_to('my_life.txt', entry)
-			print log.action, log.end, log.start
+			print entry
 
 
 decision_maker(sys.argv)
+
+
 
 
