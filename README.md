@@ -28,14 +28,17 @@ __Life-Logger is a terminal utility to track your day in one-liners, à la Twitt
 _Requirements:_ Python (no version testing yet).
 
 All you need to do is clone the repository or download "life_logger.py" to a folder in which you have writing permission. If you don't know what this is about, just do the following:
-1. Fire up your terminal
-2. Paste + intro: _mkdir life-logger && cd life-logger && git clone https://github.com/mvime/life_logger.git_
 
-Once this is done, in order to use it:
-* Paste: _python life_logger.py_ followed by what you want to log within quotes. Check the examples in the next section if you are not sure what to do.
+1. Fire up your terminal
+2. Paste + intro: _git clone https://github.com/mvime/life_logger.git && cd life_logger_
+
+Installed! Now:
+
+1. Log your first action by pasting + intro: python life_logger.py "Tried out Life-Logger"
+2. Check out the section on Syntax & Examples to learn about all the options!
 
 ## Syntax & Examples:
 * Log an action: _python life_logger.py "Tried out Life-Logger"_
 * Log an action, setting the start-time: _python life_logger.py "Went out running" start:-1.25h_
-* View all logs ever: _python life_logger.py --view-all_
+* View all logs: _python life_logger.py --view-all_
 * View last X logs: _python life_logger.py --last-X_ (replace X with any number)
