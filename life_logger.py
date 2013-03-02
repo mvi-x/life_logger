@@ -126,7 +126,7 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 		print '<Pending>'
 	elif user_input[1] == '--view-all':
-		read_backwards('my_life.txt', 'all')
+		print repr(read_backwards('my_life.txt', 'all'))
 	# elif user_input[1] == '--view-today':
 	# 	read_backwards('my_life.txt', 'all', datetime.today())
 	elif user_input[1][:7] == '--last-':
