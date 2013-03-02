@@ -93,6 +93,11 @@ def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
 		return "Error";
 
 
+def log_displayer(results):
+	for r in results:
+		print r[:-1]
+
+
 
 def log_maker(user_input): # Processes user input and extracts a log or returns an error.
 	error = None
@@ -126,12 +131,12 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 		print '<Pending>'
 	elif user_input[1] == '--view-all':
-		print repr(read_backwards('my_life.txt', 'all'))
+		log_displayer(read_backwards('my_life.txt', 'all'))
 	# elif user_input[1] == '--view-today':
 	# 	read_backwards('my_life.txt', 'all', datetime.today())
 	elif user_input[1][:7] == '--last-':
 		lines = int(user_input[1][7:])
-		print repr(read_backwards('my_life.txt', lines))
+		log_displayer(read_backwards('my_life.txt', lines))
 
 	else:
 		maker_result = log_maker(sys.argv)
