@@ -93,10 +93,38 @@ def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
 	except IOError:
 		return False;
 
+def extract_action(r):
+	action_start = r.find('"')
+	action_end = r.find('"',action_start+1)
+	action = r[action_start+1:action_end]
+	return action
 
-def log_displayer(results):
-	for r in results:
-		print r[:-1] # The last two characters are stripped because they are "\n" and force a new line
+def extract_tags(r):
+	tags_s_start = r.find('Tags: ')
+	tags_s_last = r.rfind('@')
+	tags_s_end = r.find(' ', tags_s_last)
+	tags_s = r[tags_s_start+6:tags_s_end]
+	tags = tags_s.split(', ')
+	return tags
+
+def extract_started(r):
+	started_start = r.find('Started: ')
+	started_end = r.find('|',started_start)
+	started = datetime.datetime.strptime(r[started_start+9:started_end-2], '%Y-%m-%d %H:%M')
+	return started
+
+def extract_finished(r):
+	finished_start = r.find('Finished: ')
+	finished_end = r.find('|',finished_start)
+	finished = datetime.datetime.strptime(r[finished_start+10:finished_end-2], '%Y-%m-%d %H:%M')
+	return finished
+
+def log_displayer(logs_list):
+	for log in logs_list:
+		elapsed = log.end - log.start
+		tags = ', '.join(log.tags)
+		entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |'
+		print entry
 
 
 
@@ -112,9 +140,7 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 	elif len(user_input) == 2: #life_logger.py  + "Text"
 		prev_entry = str(read_backwards('my_life.txt', 1))
 		if prev_entry:
-			start_finished = prev_entry.find('Finished: ')
-			end_finished = prev_entry.find(' |', start_finished)
-			new_start = datetime.datetime.strptime(prev_entry[start_finished+10:end_finished], '%Y-%m-%d %H:%M')
+			new_start = datetime.datetime.strptime(extract_finished(prev_entry), '%Y-%m-%d %H:%M')
 	
 	else: #life_logger.py  + "Text" + any or all of the optional parameters
 		assert len(user_input) >= 3
@@ -131,20 +157,32 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 	else:
 		log = LogEntry(user_input[1], tags)
 
-	
 	return log, error
 
 
-def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
-	if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
-		print '<Pending>'
-	elif user_input[1] == '--view-all':
-		log_displayer(read_backwards('my_life.txt', 'all'))
-	# elif user_input[1] == '--view-today':
-	# 	read_backwards('my_life.txt', 'all', datetime.today())
+
+def log_reconstructor(user_input):
+	if user_input[1] == '--view-all':
+		lines = 'all'
 	elif user_input[1][:7] == '--last-':
 		lines = int(user_input[1][7:])
-		log_displayer(read_backwards('my_life.txt', lines))
+
+	results = read_backwards('my_life.txt', lines)
+	log_list = []
+	for r in results:
+		log = LogEntry(extract_action(r), extract_tags(r), extract_started(r), extract_finished(r))
+		log_list.append(log)
+
+	return log_list
+
+
+def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
+	if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
+
+		if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
+			print '<Pending>'
+		else:
+			log_displayer(log_reconstructor(user_input))
 
 	else:
 		maker_result = log_maker(user_input)
@@ -152,12 +190,9 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			print maker_result[1] #print the error
 		else:
 			assert maker_result[0] != None
-			log = maker_result[0]
-			elapsed = log.end - log.start
-			tags = ', '.join(log.tags)
-			entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |\n'
-			append_to('my_life.txt', entry)
-			print entry
+			log = []
+			log.append(maker_result[0])
+			log_displayer(log)
 
 
 decision_maker(sys.argv)
