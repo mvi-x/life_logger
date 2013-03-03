@@ -61,15 +61,7 @@ class BackwardsReader:
             self.file.seek(-1, 2)
 
 
-def append_to(file, entry): # Opens and appends an entry into a file
-	try:
-	    logfile = open(file, "a") # Opens the file in appending mode or creates it if unexisting
-	    try:
-	        logfile.write(entry)
-	    finally:
-	        logfile.close()
-	except IOError:
-	    pass
+
 
 def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
 	try: 
@@ -116,15 +108,40 @@ def extract_started(r):
 def extract_finished(r):
 	finished_start = r.find('Finished: ')
 	finished_end = r.find('|',finished_start)
-	finished = datetime.datetime.strptime(r[finished_start+10:finished_end-2], '%Y-%m-%d %H:%M')
+	finished = datetime.datetime.strptime(r[finished_start+10:finished_end-1], '%Y-%m-%d %H:%M')
 	return finished
 
-def log_displayer(logs_list):
-	for log in logs_list:
-		elapsed = log.end - log.start
-		tags = ', '.join(log.tags)
-		entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |'
-		print entry
+def extract_prev_finished():
+	new_start = None
+	prev_entry = str(read_backwards('my_life.txt', 1))
+	if prev_entry:
+		new_start = extract_finished(prev_entry)
+	return new_start
+
+def entry_constructor(log):
+	elapsed = log.end - log.start
+	tags = ', '.join(log.tags)
+	entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |'
+	return entry
+
+
+def append_to(file, entry): # Opens and appends an entry into a file
+	try:
+	    logfile = open(file, "a") # Opens the file in appending mode or creates it if unexisting
+	    try:
+	        logfile.write(entry)
+	    finally:
+	        logfile.close()
+	except IOError:
+	    pass
+
+def log_writer(log_list): # a list of only one log is being passed
+	assert len(log_list) == 1
+	append_to('my_life.txt',entry_constructor(log_list[0]))
+
+def log_displayer(log_list):
+	for log in log_list:
+		print entry_constructor(log)
 
 
 
@@ -138,12 +155,11 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 		error = 'At the very least you need to enter one action. Please use the following syntax: \'python life_logger.py "Text to log" start:-5h ;; start:is an optional parameter\''
 		
 	elif len(user_input) == 2: #life_logger.py  + "Text"
-		prev_entry = str(read_backwards('my_life.txt', 1))
-		if prev_entry:
-			new_start = datetime.datetime.strptime(extract_finished(prev_entry), '%Y-%m-%d %H:%M')
+		new_start = extract_prev_finished()
 	
 	else: #life_logger.py  + "Text" + any or all of the optional parameters
 		assert len(user_input) >= 3
+		new_start = extract_prev_finished()
 		for i in user_input[2:]:
 			if '@' in i:
 				tags.append(i)
@@ -186,13 +202,14 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 
 	else:
 		maker_result = log_maker(user_input)
-		if maker_result[1] != None:
+		if maker_result[1] != None: #if there was an error when running log_maker
 			print maker_result[1] #print the error
-		else:
+		else: # if no error was found when running log_maker
 			assert maker_result[0] != None
-			log = []
-			log.append(maker_result[0])
-			log_displayer(log)
+			log_list = []
+			log_list.append(maker_result[0])
+			log_displayer(log_list)
+			log_writer(log_list)
 
 
 decision_maker(sys.argv)
