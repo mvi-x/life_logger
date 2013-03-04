@@ -94,9 +94,12 @@ def extract_action(r):
 def extract_tags(r):
 	tags_s_start = r.find('Tags: ')
 	tags_s_last = r.rfind('@')
-	tags_s_end = r.find(' ', tags_s_last)
-	tags_s = r[tags_s_start+6:tags_s_end]
-	tags = tags_s.split(', ')
+	if tags_s_last == -1:
+		tags = '';
+	else: 		
+		tags_s_end = r.find(' ', tags_s_last)
+		tags_s = r[tags_s_start+6:tags_s_end]
+		tags = tags_s.split(', ')
 	return tags
 
 def extract_started(r):
@@ -137,7 +140,7 @@ def append_to(file, entry): # Opens and appends an entry into a file
 
 def log_writer(log_list): # a list of only one log is being passed
 	assert len(log_list) == 1
-	append_to('my_life.txt',entry_constructor(log_list[0]))
+	append_to('my_life.txt',entry_constructor(log_list[0])+'\n')
 
 def log_displayer(log_list):
 	for log in log_list:
@@ -210,7 +213,6 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			log_list.append(maker_result[0])
 			log_displayer(log_list)
 			log_writer(log_list)
-
 
 decision_maker(sys.argv)
 
