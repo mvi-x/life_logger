@@ -62,25 +62,49 @@ class BackwardsReader:
 
 
 
+def is_in_line(line, filter_by):
+	if filter_by[0] and line.find(filter_by[0]) != -1:
+		return True
+	else:
+		return False
 
-def read_backwards(file, lines, *args): # args[0]:since, args[1]:up-to
+
+def read_backwards(file, lines, *filter_by): # filter_by valid options now: tags, dates. Maybe in the future: since, up-to
 	try: 
 		br = BackwardsReader(open(file))
 		out = []
 		if lines == 'all':
+			all_lines = []
 			while 1:
 			    line = br.readline()
 			    if not line:
 			        break
-			    out.append(line)
+			    all_lines.append(line)
+			if filter_by:
+				for line in all_lines:
+					if is_in_line(line, filter_by):
+						out.append(line)
+			else:
+				out = all_lines
+
 		else:
 			i = 0
-			while i < lines:
-				line = br.readline()
-				if not line:
-					break
-				out.append(line)
-				i = i+1
+			if filter_by:			
+				while i < lines:
+					line = br.readline()
+					if not line:
+						break
+					if is_in_line(line, filter_by):
+						out.append(line)
+						i += 1
+			else:
+				while i < lines:
+					line = br.readline()
+					if not line:
+						break
+					out.append(line)
+					i += 1
+
 		return out
 	except IOError:
 		return False;
@@ -125,7 +149,7 @@ def entry_constructor(log):
 	elapsed = log.end - log.start
 	tags = ', '.join(log.tags)
 	entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |'
-	return entry
+	return entry, elapsed
 
 
 def append_to(file, entry): # Opens and appends an entry into a file
@@ -143,8 +167,13 @@ def log_writer(log_list): # a list of only one log is being passed
 	append_to('my_life.txt',entry_constructor(log_list[0])+'\n')
 
 def log_displayer(log_list):
+	total_elapsed = datetime.timedelta(hours = 0)
 	for log in log_list:
-		print entry_constructor(log)
+		entry, elapsed = entry_constructor(log)
+		total_elapsed += elapsed
+		print entry
+	print '---------------\nTotal: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.'
+
 
 
 
@@ -179,19 +208,39 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 	return log, error
 
 
+def is_there_filter(user_input):
+	filter_by = None;
+	error = None;
+	if len(user_input) > 3:
+		error = "Please, revise your syntax. Only one additional parameter can be provided after "+user_input[2]
+	elif len(user_input) == 3:
+		filter_by = user_input[2]
+	return filter_by, error
+
 
 def log_reconstructor(user_input):
 	if user_input[1] == '--view-all':
 		lines = 'all'
+		filter_by, error = is_there_filter(user_input)
 	elif user_input[1][:7] == '--last-':
 		lines = int(user_input[1][7:])
+		filter_by, error = is_there_filter(user_input)
 
-	results = read_backwards('my_life.txt', lines)
+	else:
+		error = "Please, revise your syntax. Use the --help option for some examples."
+
+	if error:
+		print error
+	elif filter_by:
+		results = read_backwards('my_life.txt', lines, filter_by)
+	else:
+		results = read_backwards('my_life.txt', lines)
+	
 	log_list = []
 	for r in results:
 		log = LogEntry(extract_action(r), extract_tags(r), extract_started(r), extract_finished(r))
 		log_list.append(log)
-
+		
 	return log_list
 
 
