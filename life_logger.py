@@ -164,7 +164,7 @@ def append_to(file, entry): # Opens and appends an entry into a file
 
 def log_writer(log_list): # a list of only one log is being passed
 	assert len(log_list) == 1
-	append_to('my_life.txt',str(entry_constructor(log_list[0])))
+	append_to('my_life.txt',str(entry_constructor(log_list[0])[0]))
 
 def log_displayer(log_list):
 	total_elapsed = datetime.timedelta(hours = 0)
