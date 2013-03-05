@@ -16,6 +16,8 @@ __Life-Logger is a terminal utility to track your day in one-liners, à la Twitt
 * Filter logs by tag, date or any partial query
 * View the number of hours spent
 
+![Screenshot](http://img705.imageshack.us/img705/9228/lifeloggerscreenshot.png "Example Screenshot")
+
 ## Ideas for possible future features:
 * Filter and view all logs within a set time interval
 * Show a graphic of the amount of hours spent on a chosen tag (all-time or within an optional time interval)
