@@ -148,7 +148,7 @@ def extract_prev_finished():
 def entry_constructor(log):
 	elapsed = log.end - log.start
 	tags = ', '.join(log.tags)
-	entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |'
+	entry = '"' + log.action + '" | Started: ' + str(log.start)[:16] + ' | Finished: ' + str(log.end)[:16] + ' | Elapsed: ' + str(elapsed)[:4] + ' | Tags: ' + tags + ' |\n'
 	return entry, elapsed
 
 
@@ -164,7 +164,7 @@ def append_to(file, entry): # Opens and appends an entry into a file
 
 def log_writer(log_list): # a list of only one log is being passed
 	assert len(log_list) == 1
-	append_to('my_life.txt',entry_constructor(log_list[0])+'\n')
+	append_to('my_life.txt',str(entry_constructor(log_list[0])))
 
 def log_displayer(log_list):
 	total_elapsed = datetime.timedelta(hours = 0)
@@ -172,7 +172,7 @@ def log_displayer(log_list):
 		entry, elapsed = entry_constructor(log)
 		total_elapsed += elapsed
 		print entry
-	print '---------------\nTotal: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.'
+	print '-----------------\nTotal: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.\n-----------------'
 
 
 
