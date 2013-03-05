@@ -166,14 +166,41 @@ def log_writer(log_list): # a list of only one log is being passed
 	assert len(log_list) == 1
 	append_to('my_life.txt',str(entry_constructor(log_list[0])[0]))
 
+
+def print_table(table, total_elapsed):
+    col_width = [max(len(x) for x in col) for col in zip(*table)]
+    count = 0
+    for row in table:
+    	if count == 0:
+    		print "+-" + "-+-".join("{:{}}".format('-'*col_width[i], col_width[i])
+                                for i, x in enumerate(row)) + "-+"
+    		
+
+     		print "| " + " | ".join("{:{}}".format(x, col_width[i])
+                                for i, x in enumerate(row)) + " |"
+     		print "+-" + "-+-".join("{:{}}".format('-'*col_width[i], col_width[i])
+                                for i, x in enumerate(row)) + "-+"
+    	else: 
+    		print "| " + " | ".join("{:{}}".format(x, col_width[i])
+                                for i, x in enumerate(row)) + " |"
+    	count += 1
+
+    print "+" + '-'*sum(col_width) + "-"*(len(col_width)*3-1) + '+'
+    print '| Total: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.'
+    print "+" + '-'*sum(col_width) + "-"*(len(col_width)*3-1) + '+'
+
 def log_displayer(log_list):
 	total_elapsed = datetime.timedelta(hours = 0)
+	table_headers = ('Action/Experience Logged', 'Started', 'Finished', 'Elapsed', 'Tags')
+	table = [table_headers]
 	for log in log_list:
 		entry, elapsed = entry_constructor(log)
 		total_elapsed += elapsed
-		print entry
-	print '-----------------\nTotal: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.\n-----------------'
+		row = log.action, str(log.start.strftime('%m/%d %H:%M')), str(log.end.strftime('%m/%d %H:%M')), str(log.end - log.start)[:4], ', '.join(log.tags)
 
+		table.append(row)
+	print_table(table, total_elapsed)
+	
 
 
 
@@ -264,6 +291,5 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 			log_writer(log_list)
 
 decision_maker(sys.argv)
-
 
 
