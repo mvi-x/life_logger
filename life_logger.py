@@ -245,21 +245,28 @@ def is_there_filter(user_input):
 	return filter_by, error
 
 
-def log_reconstructor(user_input):
+def query_maker(user_input):
 	if user_input[1] == '--view-all':
 		lines = 'all'
 		filter_by, error = is_there_filter(user_input)
 	elif user_input[1][:7] == '--last-':
 		lines = int(user_input[1][7:])
 		filter_by, error = is_there_filter(user_input)
-
 	else:
 		error = "Please, revise your syntax. Use the --help option for some examples."
 
 	if error:
 		print error
-	elif filter_by:
-		results = read_backwards('my_life.txt', lines, filter_by)
+
+	if filter_by:
+		return lines, filter_by
+	else:
+		return lines
+
+
+def log_reconstructor(lines, *filter_by):
+	if filter_by:
+		results = read_backwards('my_life.txt', lines, filter_by[0])
 	else:
 		results = read_backwards('my_life.txt', lines)
 	
@@ -270,14 +277,58 @@ def log_reconstructor(user_input):
 		
 	return log_list
 
+def catch_up():
+	print 'Catching-up...'
+	last_log = log_reconstructor(1)[0]
+	unaccounted = timestamp - last_log.end
+	print 'There are '+str(unaccounted)[:-13]+'h and '+str(unaccounted)[-12:-10]+'min unaccounted for.\nYour last log was:\n| '+last_log.action+' | Finished: '+str(last_log.end.strftime('%m/%d %H:%M'))+' |'
+	
+	prompt =  'Enter the action that would immediately follow the last log -> '
+	sys.stdout.write(prompt)
+	new_log_action = raw_input()
+
+	prompt = 'Enter the duration of the action -> '  # Entered syntax should be: Xd Yh Zmin with any/all optional, but one
+	sys.stdout.write(prompt)
+	new_log_elapsed_raw = raw_input().split(' ')
+
+	days = hours = mins = 0
+	if len(new_log_elapsed_raw) == 3:
+		days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+		hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
+		mins = new_log_elapsed_raw[2][:new_log_elapsed_raw[2].find('min')]
+
+	elif len(new_log_elapsed_raw) ==2:
+		if new_log_elapsed_raw[0].find('d') != -1:
+			days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+			hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
+		elif new_log_elapsed_raw[0].find('h') != -1:
+			hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+			mins = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('min')]
+	elif len(new_log_elapsed_raw) ==1:
+		if new_log_elapsed_raw[0].find('d') != -1:
+			days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+		elif new_log_elapsed_raw[0].find('h') != -1:
+			hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+		elif new_log_elapsed_raw[0].find('min') != -1:
+			mins = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('min')]
+
+	else:
+		print 'Error: wrong syntax for time. Please use: Xd Yh Zmin'
+
+	print new_log_action, days, hours, mins
 
 def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
 	if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
 
 		if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
 			print '<Pending>'
+
+		elif user_input[1] == '--catch-up':
+			catch_up()
+			
+
 		else:
-			log_displayer(log_reconstructor(user_input))
+			log_displayer(log_reconstructor(query_maker(user_input)))
 
 	else:
 		maker_result = log_maker(user_input)
