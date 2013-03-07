@@ -45,3 +45,6 @@ Installed! Now:
 * View all logs: ``python life_logger.py --view-all``
 * View last X logs: ``python life_logger.py --last-X`` (replace X with any number)
 * View all logs tagged @work: ``python life_logger.py --view-all @work``
+* Catch-up, to be used when you haven't been able to log in a while: ``python life_logger.py --catch-up`` (See the huge screenshot below to better understand what it does)
+
+![Screenshot](http://img202.imageshack.us/img202/4922/catchupexample.png "--catch-up option example")
