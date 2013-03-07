@@ -8,8 +8,9 @@
 import sys, datetime, os, string
 #Syntax: python life_logger.py "Text to log" @tag start:-5h ;; start: and @tag are optional parameters
 
-# We set the timestamp
-timestamp = datetime.datetime.now()
+# We set the timestamp. We only want up to minutes.
+timestamp = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
+timestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M')
 
 #default start_time (to be used when first action ever // later on when end_time over one day since last end_time)
 default_start = timestamp - datetime.timedelta(hours = 1)
@@ -209,6 +210,7 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 	log = None
 	tags = []
 	new_start = None
+	new_end = None
 
 	if len(user_input) == 1:
 		error = 'At the very least you need to enter one action. Please use the following syntax: \'python life_logger.py "Text to log" start:-5h ;; start:is an optional parameter\''
@@ -222,13 +224,20 @@ def log_maker(user_input): # Processes user input and extracts a log or returns 
 		for i in user_input[2:]:
 			if '@' in i:
 				tags.append(i)
-			if 'start:' in i:
+			elif 'start:' in i:
 				time_amount = float(i[7:-1]) #syntax is "start:-XXu", "start:-" is 7 chars long, so the amount starts at the 8th
 				#stime_unit = i[-1:] #units are set with only one character: s, h, d, y
-				new_start = timestamp - datetime.timedelta(hours = time_amount)			
+				new_start = timestamp - datetime.timedelta(hours = time_amount)
+			elif 'end:' in i:
+				new_end = datetime.datetime.strptime(i[5:], '%Y-%m-%d %H:%M')
+				
 		
 	if new_start:
-		log = LogEntry(user_input[1], tags, new_start)
+		if new_end:
+			log = LogEntry(user_input[1], tags, new_start, new_end)
+		else:
+			log = LogEntry(user_input[1], tags, new_start)
+	
 	else:
 		log = LogEntry(user_input[1], tags)
 
@@ -278,44 +287,73 @@ def log_reconstructor(lines, *filter_by):
 	return log_list
 
 def catch_up():
-	print 'Catching-up...'
+	catched_list = []
 	last_log = log_reconstructor(1)[0]
-	unaccounted = timestamp - last_log.end
-	print 'There are '+str(unaccounted)[:-13]+'h and '+str(unaccounted)[-12:-10]+'min unaccounted for.\nYour last log was:\n| '+last_log.action+' | Finished: '+str(last_log.end.strftime('%m/%d %H:%M'))+' |'
-	
-	prompt =  'Enter the action that would immediately follow the last log -> '
-	sys.stdout.write(prompt)
-	new_log_action = raw_input()
+	while last_log.end < timestamp:
+		print '\nCatching-up...'
+		unaccounted = timestamp - last_log.end
+		print 'There are '+str(unaccounted)[:-6]+'h and '+str(unaccounted)[-5:-3]+'min unaccounted for.\nYour last log was:\n| '+last_log.action+' | Finished: '+str(last_log.end.strftime('%m/%d %H:%M'))+' |'
+		
+		prompt =  'Enter the action that would immediately follow the last log ->\n... '
+		sys.stdout.write(prompt)
+		new_log_action = raw_input()
 
-	prompt = 'Enter the duration of the action -> '  # Entered syntax should be: Xd Yh Zmin with any/all optional, but one
-	sys.stdout.write(prompt)
-	new_log_elapsed_raw = raw_input().split(' ')
+		prompt = 'Enter the duration of the action ->\n... '  # Entered syntax should be: Xd Yh Zmin with any/all optional, but one
+		sys.stdout.write(prompt)
+		new_log_elapsed_raw = raw_input().split(' ')
 
-	days = hours = mins = 0
-	if len(new_log_elapsed_raw) == 3:
-		days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
-		hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
-		mins = new_log_elapsed_raw[2][:new_log_elapsed_raw[2].find('min')]
-
-	elif len(new_log_elapsed_raw) ==2:
-		if new_log_elapsed_raw[0].find('d') != -1:
+		days = hours = mins = 0
+		if len(new_log_elapsed_raw) == 3:
 			days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
 			hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
-		elif new_log_elapsed_raw[0].find('h') != -1:
-			hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
-			mins = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('min')]
-	elif len(new_log_elapsed_raw) ==1:
-		if new_log_elapsed_raw[0].find('d') != -1:
-			days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
-		elif new_log_elapsed_raw[0].find('h') != -1:
-			hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
-		elif new_log_elapsed_raw[0].find('min') != -1:
-			mins = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('min')]
+			mins = new_log_elapsed_raw[2][:new_log_elapsed_raw[2].find('min')]
 
-	else:
-		print 'Error: wrong syntax for time. Please use: Xd Yh Zmin'
+		elif len(new_log_elapsed_raw) ==2:
+			if new_log_elapsed_raw[0].find('d') != -1:
+				days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+				hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
+			elif new_log_elapsed_raw[0].find('h') != -1:
+				hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+				mins = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('min')]
+		elif len(new_log_elapsed_raw) ==1:
+			if new_log_elapsed_raw[0].find('d') != -1:
+				days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+			elif new_log_elapsed_raw[0].find('h') != -1:
+				hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+			elif new_log_elapsed_raw[0].find('min') != -1:
+				mins = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('min')]
 
-	print new_log_action, days, hours, mins
+		else:
+			print 'Error: wrong syntax for time. Please use: Xd Yh Zmin'
+
+		prompt =  'Any tags? ->\n... '
+		sys.stdout.write(prompt)
+		tags = raw_input().split(' ')
+
+		total_hours = float(days) * 24 + float(hours) + float(mins) / 60
+		new_log_end = last_log.end + datetime.timedelta(hours = total_hours)
+		user_input = ['',new_log_action, 'end: '+str(new_log_end.strftime('%Y-%m-%d %H:%M'))]
+
+		for t in tags:
+			user_input.append(t)
+
+		maker_result = log_maker(user_input)
+		if maker_result[1] != None: #if there was an error when running log_maker
+			print maker_result[1] #print the error
+			break
+		else: # if no error was found when running log_maker
+			assert maker_result[0] != None
+			log_list = []
+			log_list.append(maker_result[0])
+			log_writer(log_list)
+			catched_list.append(maker_result[0])
+
+		last_log = log_reconstructor(1)[0]
+	
+	if catched_list:
+		print '\nYou have catched-up. You logged all the entries below:'
+		log_displayer(catched_list)
+
 
 def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
 	if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
