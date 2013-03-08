@@ -190,17 +190,20 @@ def print_table(table, total_elapsed):
     print '| Total: '+str(int(total_elapsed.total_seconds()//3600))+'h '+str(int(total_elapsed.total_seconds()%3600//60))+'min.'
     print "+" + '-'*sum(col_width) + "-"*(len(col_width)*3-1) + '+'
 
-def log_displayer(log_list):
-	total_elapsed = datetime.timedelta(hours = 0)
-	table_headers = ('Action/Experience Logged', 'Started', 'Finished', 'Elapsed', 'Tags')
-	table = [table_headers]
-	for log in log_list:
-		entry, elapsed = entry_constructor(log)
-		total_elapsed += elapsed
-		row = log.action, str(log.start.strftime('%m/%d %H:%M')), str(log.end.strftime('%m/%d %H:%M')), str(log.end - log.start)[:4], ', '.join(log.tags)
+def log_displayer(log_list, *error):
+	if error:
+		print 'Error'
+	else:
+		total_elapsed = datetime.timedelta(hours = 0)
+		table_headers = ('Action/Experience Logged', 'Started', 'Finished', 'Elapsed', 'Tags')
+		table = [table_headers]
+		for log in log_list:
+			entry, elapsed = entry_constructor(log)
+			total_elapsed += elapsed
+			row = log.action, str(log.start.strftime('%m/%d %H:%M')), str(log.end.strftime('%m/%d %H:%M')), str(log.end - log.start)[:4], ', '.join(log.tags)
 
-		table.append(row)
-	print_table(table, total_elapsed)
+			table.append(row)
+		print_table(table, total_elapsed)
 	
 
 
@@ -274,110 +277,130 @@ def query_maker(user_input):
 
 
 def log_reconstructor(lines, *filter_by):
+	error = False
+	log_list = []
+
 	if filter_by:
 		results = read_backwards('my_life.txt', lines, filter_by[0])
 	else:
 		results = read_backwards('my_life.txt', lines)
 	
-	log_list = []
-	for r in results:
-		log = LogEntry(extract_action(r), extract_tags(r), extract_started(r), extract_finished(r))
-		log_list.append(log)
+	
+
+	if results:
+		for r in results:
+			log = LogEntry(extract_action(r), extract_tags(r), extract_started(r), extract_finished(r))
+			log_list.append(log)
+	else:
+		error = True
 		
-	return log_list
+	return log_list, error
 
 def catch_up():
 	catched_list = []
-	last_log = log_reconstructor(1)[0]
-	while last_log.end < timestamp:
-		print '\nCatching-up...'
-		unaccounted = timestamp - last_log.end
-		print 'There are '+str(unaccounted)[:-6]+'h and '+str(unaccounted)[-5:-3]+'min unaccounted for.\nYour last log was:\n| '+last_log.action+' | Finished: '+str(last_log.end.strftime('%m/%d %H:%M'))+' |'
-		
-		prompt =  'Enter the action that would immediately follow the last log ->\n... '
-		sys.stdout.write(prompt)
-		new_log_action = raw_input()
+	reconstructed, error = log_reconstructor(1)
+	if error:
+		print 'Error. You must have logged at least one action before using --catch-up.'
+	else:
+		last_log = reconstructed[0] 
 
-		prompt = 'Enter the duration of the action ->\n... '  # Entered syntax should be: Xd Yh Zmin with any/all optional, but one
-		sys.stdout.write(prompt)
-		new_log_elapsed_raw = raw_input().split(' ')
+		while last_log.end < timestamp:
+			print '\nCatching-up...'
+			unaccounted = timestamp - last_log.end
+			print 'There are '+str(unaccounted)[:-6]+'h and '+str(unaccounted)[-5:-3]+'min unaccounted for.\nYour last log was:\n| '+last_log.action+' | Finished: '+str(last_log.end.strftime('%m/%d %H:%M'))+' |'
+			
+			prompt =  'Enter the action that would immediately follow the last log ->\n... '
+			sys.stdout.write(prompt)
+			new_log_action = raw_input()
 
-		days = hours = mins = 0
-		if len(new_log_elapsed_raw) == 3:
-			days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
-			hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
-			mins = new_log_elapsed_raw[2][:new_log_elapsed_raw[2].find('min')]
+			prompt = 'Enter the duration of the action ->\n... '  # Entered syntax should be: Xd Yh Zmin with any/all optional, but one
+			sys.stdout.write(prompt)
+			new_log_elapsed_raw = raw_input().split(' ')
 
-		elif len(new_log_elapsed_raw) ==2:
-			if new_log_elapsed_raw[0].find('d') != -1:
+			days = hours = mins = 0
+			if len(new_log_elapsed_raw) == 3:
 				days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
 				hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
-			elif new_log_elapsed_raw[0].find('h') != -1:
-				hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
-				mins = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('min')]
-		elif len(new_log_elapsed_raw) ==1:
-			if new_log_elapsed_raw[0].find('d') != -1:
-				days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
-			elif new_log_elapsed_raw[0].find('h') != -1:
-				hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
-			elif new_log_elapsed_raw[0].find('min') != -1:
-				mins = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('min')]
+				mins = new_log_elapsed_raw[2][:new_log_elapsed_raw[2].find('min')]
 
-		else:
-			print 'Error: wrong syntax for time. Please use: Xd Yh Zmin'
+			elif len(new_log_elapsed_raw) ==2:
+				if new_log_elapsed_raw[0].find('d') != -1:
+					days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+					hours = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('h')]
+				elif new_log_elapsed_raw[0].find('h') != -1:
+					hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+					mins = new_log_elapsed_raw[1][:new_log_elapsed_raw[1].find('min')]
+			elif len(new_log_elapsed_raw) ==1:
+				if new_log_elapsed_raw[0].find('d') != -1:
+					days = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('d')]
+				elif new_log_elapsed_raw[0].find('h') != -1:
+					hours = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('h')]
+				elif new_log_elapsed_raw[0].find('min') != -1:
+					mins = new_log_elapsed_raw[0][:new_log_elapsed_raw[0].find('min')]
 
-		prompt =  'Any tags? ->\n... '
-		sys.stdout.write(prompt)
-		tags = raw_input().split(' ')
+			else:
+				print 'Error: wrong syntax for time. Please use: Xd Yh Zmin'
 
-		total_hours = float(days) * 24 + float(hours) + float(mins) / 60
-		new_log_end = last_log.end + datetime.timedelta(hours = total_hours)
-		user_input = ['',new_log_action, 'end: '+str(new_log_end.strftime('%Y-%m-%d %H:%M'))]
+			prompt =  'Any tags? ->\n... '
+			sys.stdout.write(prompt)
+			tags = raw_input().split(' ')
 
-		for t in tags:
-			user_input.append(t)
+			total_hours = float(days) * 24 + float(hours) + float(mins) / 60
+			new_log_end = last_log.end + datetime.timedelta(hours = total_hours)
+			user_input = ['',new_log_action, 'end: '+str(new_log_end.strftime('%Y-%m-%d %H:%M'))]
 
-		maker_result = log_maker(user_input)
-		if maker_result[1] != None: #if there was an error when running log_maker
-			print maker_result[1] #print the error
-			break
-		else: # if no error was found when running log_maker
-			assert maker_result[0] != None
-			log_list = []
-			log_list.append(maker_result[0])
-			log_writer(log_list)
-			catched_list.append(maker_result[0])
+			for t in tags:
+				user_input.append(t)
 
-		last_log = log_reconstructor(1)[0]
-	
-	if catched_list:
-		print '\nYou have catched-up. You logged all the entries below:'
-		log_displayer(catched_list)
+			maker_result = log_maker(user_input)
+			if maker_result[1] != None: #if there was an error when running log_maker
+				print maker_result[1] #print the error
+				break
+			else: # if no error was found when running log_maker
+				assert maker_result[0] != None
+				log_list = []
+				log_list.append(maker_result[0])
+				log_writer(log_list)
+				catched_list.append(maker_result[0])
+
+			last_log, error = log_reconstructor(1)[0]
+		
+		if catched_list:
+			print '\nYou have catched-up. You logged all the entries below:'
+			log_displayer(catched_list)
 
 
 def decision_maker(user_input): # Processes user input and determines whether s/he is entering a new log, asking for help, or asking to view the history
-	if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
+	if len(user_input) <=1:
+		print 'Wrong syntax. Please, use --help to learn how to use all options available.'
+	
+	else:
+		if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
 
-		if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
-			print '<Pending>'
+			if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
+				print '<Pending>'
 
-		elif user_input[1] == '--catch-up':
-			catch_up()
-			
+			elif user_input[1] == '--catch-up':
+				catch_up()
+				
+
+			else:
+				reconstructed, error = log_reconstructor(query_maker(user_input))
+				if error:
+					print 'There is nothing to show here. Log an action first.'
+				else:
+					log_displayer(reconstructed)
 
 		else:
-			log_displayer(log_reconstructor(query_maker(user_input)))
-
-	else:
-		maker_result = log_maker(user_input)
-		if maker_result[1] != None: #if there was an error when running log_maker
-			print maker_result[1] #print the error
-		else: # if no error was found when running log_maker
-			assert maker_result[0] != None
-			log_list = []
-			log_list.append(maker_result[0])
-			log_displayer(log_list)
-			log_writer(log_list)
+			maker_result = log_maker(user_input)
+			if maker_result[1] != None: #if there was an error when running log_maker
+				print maker_result[1] #print the error
+			else: # if no error was found when running log_maker
+				assert maker_result[0] != None
+				log_list = []
+				log_list.append(maker_result[0])
+				log_displayer(log_list)
+				log_writer(log_list)
 
 decision_maker(sys.argv)
 
