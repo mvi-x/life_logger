@@ -69,6 +69,17 @@ def is_in_line(line, filter_by):
 	else:
 		return False
 
+def normal_read (file):
+	try:
+		to_read = open(file, 'r')
+		try:
+			return to_read.read()
+		finally:
+			to_read.close()
+	except IOError:
+		pass
+
+
 
 def read_backwards(file, lines, *filter_by): # filter_by valid options now: tags, dates. Maybe in the future: since, up-to
 	try: 
@@ -378,7 +389,7 @@ def decision_maker(user_input): # Processes user input and determines whether s/
 		if user_input[1][:2] == '--': # User is not trying to log a new item, s/he is asking something
 
 			if user_input[1] == '--help': # if user inputs 'life_logger.py --help', print the help file
-				print '<Pending>'
+				print normal_read('README.md')
 
 			elif user_input[1] == '--catch-up':
 				catch_up()
