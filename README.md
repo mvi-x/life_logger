@@ -23,6 +23,7 @@ __Life-Logger is a terminal utility to track your day in one-liners, à la Twitt
 * Show a graphic of the amount of hours spent on a chosen tag (all-time or within an optional time interval)
 * Export/Publish as html+css
 * Different kinds of entries: action log, summary of the day, idea, ...
+* Create a web front-end where users can share their life_logs and check out other user's life_logs. This seems specially interesting to me (mvi) as a way for students and people considering a change in lifestyle/career to explore what life really is like for people who are living their possible choices.
 
 
 ## Installation instructions:
